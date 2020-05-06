@@ -11,8 +11,9 @@
 /// core amount so the exchange rate is preserved.
 async function addLiquidity(keyring, api, asset_id, asset_amount, core_amount) {
     const txHash = await api.tx.cennzxSpot
-        .addLiquidity(asset_id, 0, asset_amount, core_amount)
-        .signAndSend(keyring.alice);
+        .addLiquidity(asset_id.toString(), "0", asset_amount.toString(), core_amount.toString());
+    console.log(`${txHash}`);
+    txHash.signAndSend(keyring.alice);
     console.log(`Adding Liquidity: Trade asset:${asset_id} \nMax trade asset commited:${asset_amount} \nAmount or core asset:${core_amount}`);
 }
 

@@ -24,7 +24,7 @@ async function parseCommand(settings, api){
 	switch(settings.command) {
 		//Generic Asset
 		case `transfer`:
-			await transfer(keyring, api, settings.amount, settings.asset_id);
+			await transfer(keyring, api, settings.to, settings.amount, settings.asset_id, settings.sub);
 			break;
 		case `balances`:
 			await reportBalances(keyring, api, settings.asset_id);

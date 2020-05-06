@@ -1,7 +1,7 @@
 //Parser for CLI commands
 
 // Required imports
-const ArgParse = require('argparse')
+const ArgParse = require('argparse');
 
 function balancesConfig(parser) {
     parser.addArgument(
@@ -17,10 +17,19 @@ function balancesConfig(parser) {
 //<amount> <asset_id>
 function transferConfig(parser) {
     parser.addArgument(
+        "to",
+        {
+            nargs: `1`,
+            type: String,
+            action: 'store',
+            help: "Who's account to tranfer TO"
+        }
+    );
+    parser.addArgument(
         "amount",
         {
             nargs: `1`,
-            type: Number,
+            type: String,
             action: 'store',
             help: "The Amount to transfer"
         }
@@ -34,6 +43,15 @@ function transferConfig(parser) {
             help: "The Asset ID to transfer"
         }
     );
+    parser.addArgument(
+        "sub",
+        {
+            nargs: `?`,
+            type: Boolean,
+            action: 'store',
+            help: "Substribe to events regarding this transfer."
+        }
+    );
 }
 
 function addLiquidityConfig(parser) {
@@ -41,7 +59,7 @@ function addLiquidityConfig(parser) {
         "asset_id",
         {
             nargs: `1`,
-            type: Number,
+            type: String,
             action: 'store',
             help: "The Asset ID/' exchange pool to add liquidity to."
         }
@@ -50,7 +68,7 @@ function addLiquidityConfig(parser) {
         "asset_amount",
         {
             nargs: `1`,
-            type: Number,
+            type: String,
             action: 'store',
             help: "The maximum amount of trade asset to be committed into the exchange reserve pool"
         }
@@ -59,7 +77,7 @@ function addLiquidityConfig(parser) {
         "core_amount",
         {
             nargs: `1`,
-            type: Number,
+            type: String,
             action: 'store',
             help: "The amount of core asset to be added to the exchange reserve pool"
         }
@@ -367,7 +385,7 @@ function constructParser() {
     let subparser = parser.addSubparsers({dest: 'command', title:'Enter the command you want to call as arguments.\n' +
             'Supported Commands:\n' +
             'Generic Asset:\n' +
-            'transfer <amount> <asset_id>: Alice will transfer some money to Bob\n' +
+            'transfer <to> <amount> <asset_id> <sub>: Alice will transfer some money to <to>\n' +
             'balances <asset_id>: Check current balances for Alice and Bob\n\n' +
 
             'CENNZ X spot exchange \n' +
