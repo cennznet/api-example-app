@@ -43,15 +43,6 @@ function transferConfig(parser) {
             help: "The Asset ID to transfer"
         }
     );
-    parser.addArgument(
-        "sub",
-        {
-            nargs: `?`,
-            type: Boolean,
-            action: 'store',
-            help: "Substribe to events regarding this transfer."
-        }
-    );
 }
 
 function addLiquidityConfig(parser) {

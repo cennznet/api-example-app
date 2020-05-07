@@ -1,3 +1,10 @@
+///
+/// This file contains some utility functions that are used in
+/// other modules
+///
+
+
+// Submit a transaction, then wait until it is finalized. Output any status update.
 async function signSendAndMonitor(tx, signer, timeoutMs=10000) {
   let waiting = true;
   let waitMs = 0;
@@ -27,6 +34,7 @@ async function signSendAndMonitor(tx, signer, timeoutMs=10000) {
   }
 }
 
+//Converts an string name into an address on the blockchain
 function getAddress(keyring, account) {
   //un-tested
   let target = keyring.alice.address;
