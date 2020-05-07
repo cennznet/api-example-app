@@ -1,7 +1,9 @@
 ///
-/// This file includes Js API example functions that are related to the 
+/// This file includes Js API example functions that are related to the
 /// Generic Asset module.
 ///
+
+const { sleepMs } = require('./utilities.js');
 
 const Asset1 = 16000;
 const Asset2 = 16001;
@@ -76,10 +78,6 @@ async function transfer_with_sub(keyring, api, to, amount, asset_id) {
 		console.log("Transaction Failed")
 	}
 
-}
-
-function sleepMs(ms) {
-	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = {reportBalances, transfer}

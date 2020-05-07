@@ -3,6 +3,7 @@
 /// Cennznet X spot exchange module.
 ///
 
+const { signSendAndMonitor, getAddress } = require('./utilities.js');
 
 /// Add some assets to the exchange reserve pool for the trade asset and Core asset.
 /// You can some liquidity back in exchange.
@@ -10,31 +11,26 @@
 /// If there are already liquidity in the reserve pool, the amount of asset to be committed will be calculated from the
 /// core amount so the exchange rate is preserved.
 async function addLiquidity(keyring, api, asset_id, asset_amount, core_amount) {
-    const txHash = await api.tx.cennzxSpot
+    const tx = api.tx.cennzxSpot
         .addLiquidity(asset_id.toString(), "0", asset_amount.toString(), core_amount.toString());
-    console.log(`${txHash}`);
-    txHash.signAndSend(keyring.alice);
     console.log(`Adding Liquidity: Trade asset:${asset_id} \nMax trade asset commited:${asset_amount} \nAmount or core asset:${core_amount}`);
+    await signSendAndMonitor(tx, keyring.alice);
 }
 
 /// Withdraw some liquidity from an exchange pool and get some trade and core asset back.
-async function removeLiquidity(keyring, api, asset_id, amount, min_asset_amount, min_core_amount) {
-    if(min_asset_amount == undefined){
-        min_asset_amount = 0;
-    }
-    if(min_core_amount == undefined){
-        min_core_amount = 0;
-    }
+async function removeLiquidity(keyring, api, asset_id, amount, min_asset = 0, min_core = 0) {
+    const tx = api.tx.cennzxSpot
+        .removeLiquidity(asset_id.toString(), amount.toString(), min_asset.toString(), min_core.toString());
 
-    const txHash = await api.tx.cennzxSpot
-        .addLiquidity(asset_id, 0, asset_amount, core_amount)
-        .signAndSend(keyring.alice);
-    console.log(`Adding Liquidity: Trade asset:${asset_id} \nMax trade asset commited:${asset_amount} \nAmount or core asset:${core_amount}`);
+    console.log(`Removing ${amount} Liquidity of Trade asset: ${asset_id}`);
+    console.log(`\tMin trade asset required: ${min_asset}`);
+    console.log(`\tMin core asset required: ${min_core}`);
+    await signSendAndMonitor(tx, keyring.alice);
 }
 
 /// Get the value of liquidity owned by <account_id> held in <asset_id>'s exchange pool
 async function liquidityValue(keyring, api, who, asset_id) {
-    let account_id = GetAddress(keyring, who);
+    let account_id = getAddress(keyring, who);
     const amount = await api.rpc.cennzx
         .liquidityValue(account_id, asset_id);
     console.log(`${who} for asset:${asset_id} has liquidity of: ${amount}`);
@@ -44,8 +40,9 @@ async function liquidityValue(keyring, api, who, asset_id) {
 async function liquidityPrice(keyring, api, asset_id, amount) {
     let [trade_price, core_price] = await api.rpc.cennzx
         .liquidityPrice(asset_id, amount);
-    console.log(`Liquidity: ${amount} for asset ${asset_id} will cost: \n
-                 Asset: ${trade_price} and core: ${core_price}`);
+
+    console.log(`Liquidity: ${amount} for asset ${asset_id} will cost:`)
+    console.log(`\tAsset: ${trade_price} \n\tcore: ${core_price}`);
 }
 
 /// calculate the amount of "asset_to_sell" is required to buy "buy_amount" of "asset_to_buy"
@@ -53,6 +50,7 @@ async function liquidityPrice(keyring, api, asset_id, amount) {
 async function buyPrice(keyring, api, asset_to_buy, buy_amount, asset_to_sell) {
     const price = await api.rpc.cennzx
         .buyPrice(asset_to_buy, buy_amount, asset_to_sell);
+
     console.log(`Buying asset:${asset_to_buy} amount:${buy_amount} selling asset:${asset_to_sell}`);
     console.log(`The price will be: ${price}`);
 }
@@ -62,6 +60,7 @@ async function buyPrice(keyring, api, asset_to_buy, buy_amount, asset_to_sell) {
 async function sellPrice(keyring, api, asset_to_sell, sell_amount, asset_to_buy) {
     const price = await api.rpc.cennzx
         .sellPrice(asset_to_sell, sell_amount, asset_to_buy);
+
     console.log(`Selling asset:${asset_to_sell} amount:${sell_amount} buying asset:${asset_to_buy}`);
     console.log(`The price will be: ${price}`);
 }
@@ -69,61 +68,25 @@ async function sellPrice(keyring, api, asset_to_sell, sell_amount, asset_to_buy)
 /// Buy buy_amount amount of trade asset:asset_to_buy, selling asset_to_sell.
 /// Deposit the exchagned assets into "recipient"'s account
 async function buyAsset(keyring, api, recipient, asset_to_sell, asset_to_buy, buy_amount ) {
-    const account_id = GetAddress(keyring, recipient);
-    let waiting = true;
+    const account_id = getAddress(keyring, recipient);
 
-    let unsub = await api.tx.cennzxSpot
-    .buyAsset(account_id, asset_to_sell.toString(), asset_to_buy.toString(), buy_amount.toString(), 9999999999)
-    .signAndSend(keyring.alice, ({ events = [], status }) => {
-        console.log(`Current status is ${status.type}`);
+    let tx = api.tx.cennzxSpot
+        .buyAsset(account_id, asset_to_sell.toString(), asset_to_buy.toString(), buy_amount.toString(), 9999999999);
 
-        if (status.isFinalized) {
-            console.log(`Transaction included at blockHash ${status.asFinalized}`);
-
-            // Loop through Vec<EventRecord> to look for ExtrinsicSuccess
-            events.forEach(({ phase, event }) => {
-                console.log(`\t' ${phase}: ${event.section}.${event.method}:: ${event.data}`);
-                if (event.section == 'system' && event.method == 'ExtrinsicSuccess') {
-                success = true;
-                }
-            });
-            unsub();
-            waiting = false;
-        }
-    });
     console.log(`Buying asset:${asset_to_buy}, amount:${buy_amount}`);
-
-    // Wait until the extrinsic has been finalized
-    // (note: don't do this in production, sometimes tx are never finalized)
-    while(waiting) {
-        await sleepMs(100);
-    }
-
-
+    await signSendAndMonitor(tx, keyring.alice);
 }
 
 /// Sell sell_amount amount of trade asset:asset_to_sell, to buy asset_to_buy.
 /// Deposit the exchagned assets into "recipient"'s account
 async function sellAsset(keyring, api, recipient, asset_to_sell, asset_to_buy, sell_amount ) {
-    const account_id = GetAddress(keyring, recipient);
-    await api.tx.cennzxSpot
-        .sellAsset(account_id, asset_to_sell.toString(), asset_to_buy.toString(), sell_amount.toString(), 0)
-        .signAndSend(keyring.alice);
+    const account_id = getAddress(keyring, recipient);
+
+    let tx = api.tx.cennzxSpot
+        .sellAsset(account_id, asset_to_sell.toString(), asset_to_buy.toString(), sell_amount.toString(), 0);
+
     console.log(`Selling asset:${asset_to_sell}, sell amount:${sell_amount}`);
+    await signSendAndMonitor(tx, keyring.alice);
 }
 
-
-function GetAddress(keyring, account) {
-    //un-tested
-    let target = keyring.alice.address;
-    if( account != undefined ){
-        target = keyring[account].address;
-    }
-    return target;
-}
-
-function sleepMs(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-module.exports = {addLiquidity, removeLiquidity, liquidityValue, liquidityPrice, buyPrice, sellPrice, buyAsset, sellAsset, GetAddress}
+module.exports = {addLiquidity, removeLiquidity, liquidityValue, liquidityPrice, buyPrice, sellPrice, buyAsset, sellAsset, getAddress}

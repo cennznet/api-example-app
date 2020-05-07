@@ -108,6 +108,7 @@ function removeLiquidityConfig(parser) {
         {
             nargs: `?`,
             type: Number,
+            defaultValue: 0,
             action: 'store',
             help: "The minimum amount of trade asset to be withdrawn"
         }
@@ -117,6 +118,7 @@ function removeLiquidityConfig(parser) {
         {
             nargs: `?`,
             type: Number,
+            defaultValue: 0,
             action: 'store',
             help: "The minimum amount of core asset to be withdrawn"
         }

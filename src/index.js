@@ -75,6 +75,9 @@ async function parseCommand(settings, api){
 }
 
 async function run(address) {
+	// Do parseCli first so that we don't connect if we don't need to
+	const settings = cli.parseCli();
+
   // Initialise the provider to connect to the local node
   console.log(`Connecting to ${address}`);
 
@@ -91,10 +94,7 @@ async function run(address) {
   ]);
 
 	console.log(`You are connected to chain ${chain} using ${nodeName} v${nodeVersion}`);
-	
-	const settings = cli.parseCli();
 
 	await parseCommand(settings, api);
-
 }
 
