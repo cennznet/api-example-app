@@ -378,7 +378,7 @@ function constructParser() {
     let subparser = parser.addSubparsers({dest: 'command', title:'Enter the command you want to call as arguments.\n' +
             'Supported Commands:\n' +
             'Generic Asset:\n' +
-            'transfer <to> <amount> <asset_id> <sub>: Alice will transfer some money to <to>\n' +
+            'transfer <to> <amount> <asset_id>: Alice will transfer some money to <to>\n' +
             'balances <asset_id>: Check current balances for Alice and Bob\n\n' +
 
             'CENNZ X spot exchange \n' +
