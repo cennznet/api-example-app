@@ -70,10 +70,36 @@ async function sellPrice(keyring, api, asset_to_sell, sell_amount, asset_to_buy)
 /// Deposit the exchagned assets into "recipient"'s account
 async function buyAsset(keyring, api, recipient, asset_to_sell, asset_to_buy, buy_amount ) {
     const account_id = GetAddress(keyring, recipient);
-    await api.tx.cennzxSpot
-        .buyAsset(account_id, asset_to_sell, asset_to_buy, buy_amount, 999999999999999)
-        .signAndSend(keyring.alice);
+    let waiting = true;
+
+    let unsub = await api.tx.cennzxSpot
+    .buyAsset(account_id, asset_to_sell.toString(), asset_to_buy.toString(), buy_amount.toString(), 9999999999)
+    .signAndSend(keyring.alice, ({ events = [], status }) => {
+        console.log(`Current status is ${status.type}`);
+
+        if (status.isFinalized) {
+            console.log(`Transaction included at blockHash ${status.asFinalized}`);
+
+            // Loop through Vec<EventRecord> to look for ExtrinsicSuccess
+            events.forEach(({ phase, event }) => {
+                console.log(`\t' ${phase}: ${event.section}.${event.method}:: ${event.data}`);
+                if (event.section == 'system' && event.method == 'ExtrinsicSuccess') {
+                success = true;
+                }
+            });
+            unsub();
+            waiting = false;
+        }
+    });
     console.log(`Buying asset:${asset_to_buy}, amount:${buy_amount}`);
+
+    // Wait until the extrinsic has been finalized
+    // (note: don't do this in production, sometimes tx are never finalized)
+    while(waiting) {
+        await sleepMs(100);
+    }
+
+
 }
 
 /// Sell sell_amount amount of trade asset:asset_to_sell, to buy asset_to_buy.
@@ -81,7 +107,7 @@ async function buyAsset(keyring, api, recipient, asset_to_sell, asset_to_buy, bu
 async function sellAsset(keyring, api, recipient, asset_to_sell, asset_to_buy, sell_amount ) {
     const account_id = GetAddress(keyring, recipient);
     await api.tx.cennzxSpot
-        .sellAsset(account_id, asset_to_sell, asset_to_buy, sell_amount, 0)
+        .sellAsset(account_id, asset_to_sell.toString(), asset_to_buy.toString(), sell_amount.toString(), 0)
         .signAndSend(keyring.alice);
     console.log(`Selling asset:${asset_to_sell}, sell amount:${sell_amount}`);
 }
@@ -95,5 +121,9 @@ function GetAddress(keyring, account) {
     }
     return target;
 }
+
+function sleepMs(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
 module.exports = {addLiquidity, removeLiquidity, liquidityValue, liquidityPrice, buyPrice, sellPrice, buyAsset, sellAsset, GetAddress}
